@@ -1,17 +1,40 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import App from "./components/App";
+import {BrowserRouter} from 'react-router-dom';
+import {applyMiddleware, compose, createStore} from "redux";
+import rootReducer from "./store/reducers/reducer";
+import thunk from "redux-thunk";
+import {Provider} from "react-redux";
+import { getUser } from "./store/actions/actions";
 
-ReactDOM.render(
+const actionSanitizer = (action: any) =>
+    action.type === 'FILE_DOWNLOAD_SUCCESS' && action.data ? { ...action, data: '<<LONG_BLOB>>' } : action;
+
+const composeEnhancers =
+    // @ts-ignore
+    typeof window === 'object' && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__
+        // @ts-ignore
+        ? window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__({
+            actionSanitizer,
+            stateSanitizer: (state: any) => (state.data ? { ...state, data: '<<LONG_BLOB>>' } : state),
+        })
+        : compose;
+
+const store = createStore(rootReducer, composeEnhancers(applyMiddleware(thunk)));
+const { dispatch } = store;
+
+const update = () => ReactDOM.render(
   <React.StrictMode>
-    <App />
+      <Provider store={store}>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+      </Provider>
   </React.StrictMode>,
   document.getElementById('root')
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+// @ts-ignore
+update();
+store.subscribe(update);
